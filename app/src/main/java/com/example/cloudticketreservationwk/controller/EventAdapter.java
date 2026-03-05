@@ -17,13 +17,15 @@ import java.util.List;
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.VH> {
 
     public static class EventItem {
+        public final String id;
         public final String title;
         public final String date;
         public final String location;
         public final String category;
         public final String description;
 
-        public EventItem(String title, String date, String location, String category, String description) {
+        public EventItem(String id, String title, String date, String location, String category, String description) {
+            this.id = id;
             this.title = title;
             this.date = date;
             this.location = location;

@@ -1,7 +1,9 @@
 package com.example.cloudticketreservationwk.controller;
 
 import com.example.cloudticketreservationwk.R;
+import com.example.cloudticketreservationwk.service.InMemoryStore;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
@@ -29,27 +31,52 @@ public class MyReservationsActivity extends AppCompatActivity implements Reserva
         tvEmpty = findViewById(R.id.tvEmptyReservations);
         RecyclerView rv = findViewById(R.id.rvMyReservations);
         MaterialButton btnBack = findViewById(R.id.btnBackFromReservations);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
 
-        btnBack.setOnClickListener(v -> finish());
-
-        seedDummyReservations();
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+        if (btnLogout != null) btnLogout.setOnClickListener(v -> logout());
 
         adapter = new ReservationAdapter(reservations, this);
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
 
-        tvEmpty.setVisibility(reservations.isEmpty() ? View.VISIBLE : View.GONE);
+        reloadFromStore();
     }
 
-    private void seedDummyReservations() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        reloadFromStore();
+    }
+
+    private void reloadFromStore() {
         reservations.clear();
-        reservations.add(new ReservationAdapter.ReservationItem("Comedy Night", "2026-03-10", "2", "Active"));
-        reservations.add(new ReservationAdapter.ReservationItem("Tech Meetup", "2026-03-12", "1", "Active"));
+
+        for (InMemoryStore.ReservationItem r : InMemoryStore.MY_RESERVATIONS) {
+            String title = (r.event == null) ? "" : r.event.title;
+            String date = (r.event == null) ? "" : r.event.date;
+
+            reservations.add(new ReservationAdapter.ReservationItem(
+                    title,
+                    date,
+                    String.valueOf(r.tickets),
+                    r.status
+            ));
+        }
+
+        if (adapter != null) adapter.notifyDataSetChanged();
+        if (tvEmpty != null) tvEmpty.setVisibility(reservations.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     @Override
     public void onCancelClicked(ReservationAdapter.ReservationItem r) {
-
         Snackbar.make(findViewById(android.R.id.content), "tba", Snackbar.LENGTH_SHORT).show();
+    }
+
+    private void logout() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 }

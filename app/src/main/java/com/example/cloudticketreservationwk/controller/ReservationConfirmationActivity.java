@@ -1,6 +1,7 @@
 package com.example.cloudticketreservationwk.controller;
 
 import com.example.cloudticketreservationwk.R;
+import com.example.cloudticketreservationwk.service.InMemoryStore;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -17,17 +18,22 @@ public class ReservationConfirmationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reservation_confirmation);
 
-        String title = getIntent().getStringExtra("TITLE");
+        String eventId = getIntent().getStringExtra("EVENT_ID");
         String tickets = getIntent().getStringExtra("TICKETS");
+
+        InMemoryStore.EventItem e = InMemoryStore.findEventById(eventId);
 
         TextView tvDetails = findViewById(R.id.tvConfirmDetails);
         MaterialButton btnBack = findViewById(R.id.btnBack);
         MaterialButton btnMy = findViewById(R.id.btnGoMyReservations);
         MaterialButton btnEvents = findViewById(R.id.btnGoEvents);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
 
-        String line1 = (title == null || title.isEmpty()) ? "Reservation" : title;
+        if (btnLogout != null) btnLogout.setOnClickListener(v -> logout());
+
+        String title = (e == null) ? "Reservation" : e.title;
         String line2 = (tickets == null || tickets.isEmpty()) ? "" : ("\nTickets: " + tickets);
-        tvDetails.setText(line1 + line2);
+        tvDetails.setText(title + line2);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -40,5 +46,12 @@ public class ReservationConfirmationActivity extends AppCompatActivity {
             startActivity(new Intent(this, EventListActivity.class));
             finish();
         });
+    }
+
+    private void logout() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 }

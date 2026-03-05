@@ -68,7 +68,7 @@ public class ReservationAdapter extends RecyclerView.Adapter<ReservationAdapter.
         ReservationItem r = items.get(position);
 
         h.tvTitle.setText(r.eventTitle);
-        h.tvDate.setText(r.date);
+        h.tvDate.setText("Date: " + r.date);
         h.tvTickets.setText("Tickets: " + r.tickets);
         h.tvStatus.setText("Status: " + r.status);
 

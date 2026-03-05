@@ -1,6 +1,7 @@
 package com.example.cloudticketreservationwk.controller;
 
 import com.example.cloudticketreservationwk.R;
+import com.example.cloudticketreservationwk.service.InMemoryStore;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -49,19 +50,37 @@ public class AdminEventFormActivity extends AppCompatActivity {
 
         MaterialButton btnBack = findViewById(R.id.btnBackFromForm);
         MaterialButton btnSave = findViewById(R.id.btnSaveEvent);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
+
+        if (btnLogout != null) btnLogout.setOnClickListener(v -> logout());
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         String mode = getIntent().getStringExtra("MODE");
+
         if ("EDIT".equals(mode)) {
             tvAdminFormTitle.setText("Edit Event");
             btnSave.setText("Update");
 
-            etEventTitle.setText(getIntent().getStringExtra("EVENT_TITLE"));
-            etEventDate.setText(getIntent().getStringExtra("EVENT_DATE"));
-            etEventLocation.setText(getIntent().getStringExtra("EVENT_LOCATION"));
-            etEventCategory.setText(getIntent().getStringExtra("EVENT_CATEGORY"));
+            String editingId = getIntent().getStringExtra("EVENT_ID");
+            InMemoryStore.EventItem e = InMemoryStore.findEventById(editingId);
 
-            int cap = getIntent().getIntExtra("EVENT_CAPACITY", 0);
-            if (cap > 0) etEventCapacity.setText(String.valueOf(cap));
+            if (e != null) {
+                etEventTitle.setText(e.title);
+                etEventDate.setText(e.date);
+                etEventLocation.setText(e.location);
+                etEventCategory.setText(e.category);
+                etEventDescription.setText(e.description);
+                if (e.capacity > 0) etEventCapacity.setText(String.valueOf(e.capacity));
+            } else {
+                etEventTitle.setText(getIntent().getStringExtra("EVENT_TITLE"));
+                etEventDate.setText(getIntent().getStringExtra("EVENT_DATE"));
+                etEventLocation.setText(getIntent().getStringExtra("EVENT_LOCATION"));
+                etEventCategory.setText(getIntent().getStringExtra("EVENT_CATEGORY"));
+                etEventDescription.setText(getIntent().getStringExtra("EVENT_DESCRIPTION"));
+                int cap = getIntent().getIntExtra("EVENT_CAPACITY", 0);
+                if (cap > 0) etEventCapacity.setText(String.valueOf(cap));
+            }
+
         } else {
             tvAdminFormTitle.setText("Add Event");
             btnSave.setText("Save");
@@ -81,12 +100,19 @@ public class AdminEventFormActivity extends AppCompatActivity {
         if (etEventDate != null) etEventDate.setOnClickListener(dateClick);
         if (tilEventDate != null) tilEventDate.setOnClickListener(dateClick);
 
-        btnBack.setOnClickListener(v -> finish());
+        if (btnSave != null) {
+            btnSave.setOnClickListener(v -> {
+                setResult(RESULT_OK, new Intent());
+                finish();
+            });
+        }
+    }
 
-        btnSave.setOnClickListener(v -> {
-            setResult(RESULT_OK, new Intent());
-            finish();
-        });
+    private void logout() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 
     private void openMaterialCalendar() {

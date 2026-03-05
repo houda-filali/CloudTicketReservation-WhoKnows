@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class EventDetailsActivity extends AppCompatActivity {
@@ -33,8 +34,10 @@ public class EventDetailsActivity extends AppCompatActivity {
         TextInputEditText etTickets = findViewById(R.id.etTickets);
         MaterialButton btnReserve = findViewById(R.id.btnReserve);
         MaterialButton btnBackToEvents = findViewById(R.id.btnBackToEvents);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
 
-        btnBackToEvents.setOnClickListener(v -> finish());
+        if (btnLogout != null) btnLogout.setOnClickListener(v -> logout());
+        if (btnBackToEvents != null) btnBackToEvents.setOnClickListener(v -> finish());
 
         tvTitle.setText(title == null ? "" : title);
         tvDate.setText(date == null ? "" : date);
@@ -42,14 +45,19 @@ public class EventDetailsActivity extends AppCompatActivity {
         tvCategory.setText(category == null ? "" : category);
         tvDesc.setText(desc == null ? "" : desc);
 
+        if (btnReserve != null) {
+            btnReserve.setOnClickListener(v ->
+                    Snackbar.make(findViewById(android.R.id.content), "tba", Snackbar.LENGTH_SHORT).show()
+            );
+        }
 
-        btnReserve.setOnClickListener(v -> {
-            String tickets = (etTickets.getText() == null) ? "" : etTickets.getText().toString().trim();
+        if (etTickets != null) etTickets.setEnabled(false);
+    }
 
-            Intent i = new Intent(this, ReservationConfirmationActivity.class);
-            i.putExtra("TITLE", title);
-            i.putExtra("TICKETS", tickets);
-            startActivity(i);
-        });
+    private void logout() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 }

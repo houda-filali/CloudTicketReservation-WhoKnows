@@ -6,6 +6,9 @@ import java.util.UUID;
 
 public class InMemoryStore {
 
+    public static final String STATUS_ACTIVE = "Active";
+    public static final String STATUS_CANCELED = "Canceled";
+
     public static class EventItem {
         public String id;
         public String title;
@@ -24,7 +27,7 @@ public class InMemoryStore {
             this.category = category;
             this.description = description;
             this.capacity = 0;
-            this.status = "Active";
+            this.status = STATUS_ACTIVE;
         }
 
         public EventItem(String title, String date, String location, String category, String description, int capacity) {
@@ -40,6 +43,14 @@ public class InMemoryStore {
             this.description = other.description;
             this.capacity = other.capacity;
         }
+
+        public void setCanceled() {
+            this.status = STATUS_CANCELED;
+        }
+
+        public void setActive() {
+            this.status = STATUS_ACTIVE;
+        }
     }
 
     public static class ReservationItem {
@@ -52,7 +63,7 @@ public class InMemoryStore {
             this.id = UUID.randomUUID().toString();
             this.event = event;
             this.tickets = tickets;
-            this.status = "Active";
+            this.status = STATUS_ACTIVE;
         }
     }
 
@@ -64,6 +75,12 @@ public class InMemoryStore {
         EVENTS.add(new EventItem("Tech Meetup", "2026-03-12", "Campus Hall", "Tech", "Talks + networking.", 50));
         EVENTS.add(new EventItem("Live Concert", "2026-03-20", "Main Arena", "Music", "Live performance night.", 500));
         EVENTS.add(new EventItem("Food Festival", "2026-03-25", "Old Port", "Food", "Local food + vendors.", 200));
+
+        // Example canceled event
+        EVENTS.get(2).setCanceled();
+
+        MY_RESERVATIONS.add(new ReservationItem(EVENTS.get(0), 2));
+        MY_RESERVATIONS.add(new ReservationItem(EVENTS.get(1), 1));
     }
 
     public static EventItem findEventById(String id) {

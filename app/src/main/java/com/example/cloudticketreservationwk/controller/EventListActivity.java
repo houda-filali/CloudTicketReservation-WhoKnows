@@ -1,11 +1,10 @@
 package com.example.cloudticketreservationwk.controller;
 
 import com.example.cloudticketreservationwk.R;
+import com.example.cloudticketreservationwk.service.InMemoryStore;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.PopupMenu;
 
@@ -33,25 +32,36 @@ public class EventListActivity extends AppCompatActivity implements EventAdapter
     private TextInputEditText etSearch;
     private TextInputLayout tilSearch;
 
+    private View tvEmpty;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_list);
 
         RecyclerView rvEvents = findViewById(R.id.rvEvents);
-        etSearch = findViewById(R.id.etSearch);
-        View tvEmpty = findViewById(R.id.tvEmptyEvents);
-        MaterialButton btnMyReservations = findViewById(R.id.btnMyReservations);
+        tvEmpty = findViewById(R.id.tvEmptyEvents);
 
-        seedDummyEvents();
+        etSearch = findViewById(R.id.etSearch);
+        tilSearch = findViewById(R.id.tilSearch);
+
+        MaterialButton btnMyReservations = findViewById(R.id.btnMyReservations);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
 
         adapter = new EventAdapter(events, this);
         rvEvents.setLayoutManager(new LinearLayoutManager(this));
         rvEvents.setAdapter(adapter);
 
-        tvEmpty.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
+        if (btnMyReservations != null) {
+            btnMyReservations.setOnClickListener(v ->
+                    startActivity(new Intent(this, MyReservationsActivity.class))
+            );
+        }
 
-        tilSearch = findViewById(R.id.tilSearch);
+        if (btnLogout != null) {
+            btnLogout.setOnClickListener(v -> logout());
+        }
+
         if (tilSearch != null) {
             tilSearch.setStartIconOnClickListener(v -> {
                 PopupMenu menu = new PopupMenu(EventListActivity.this, v);
@@ -63,7 +73,7 @@ public class EventListActivity extends AppCompatActivity implements EventAdapter
                 menu.setOnMenuItemClickListener(item -> {
                     if (item.getItemId() == 0) {
                         tilSearch.setHint("Search events");
-                        etSearch.setText("");
+                        if (etSearch != null) etSearch.setText("");
                         return true;
                     }
                     if (item.getItemId() == 1) {
@@ -73,12 +83,12 @@ public class EventListActivity extends AppCompatActivity implements EventAdapter
                     }
                     if (item.getItemId() == 2) {
                         tilSearch.setHint("Search location");
-                        etSearch.setText("");
+                        if (etSearch != null) etSearch.setText("");
                         return true;
                     }
                     if (item.getItemId() == 3) {
                         tilSearch.setHint("Search category");
-                        etSearch.setText("");
+                        if (etSearch != null) etSearch.setText("");
                         return true;
                     }
                     return false;
@@ -88,9 +98,32 @@ public class EventListActivity extends AppCompatActivity implements EventAdapter
             });
         }
 
-        btnMyReservations.setOnClickListener(v ->
-                startActivity(new Intent(this, MyReservationsActivity.class))
-        );
+        reloadFromStore();
+        if (tvEmpty != null) tvEmpty.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        reloadFromStore();
+        if (tvEmpty != null) tvEmpty.setVisibility(events.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private void reloadFromStore() {
+        events.clear();
+        for (InMemoryStore.EventItem e : InMemoryStore.EVENTS) {
+            if (!"Canceled".equals(e.status)) {
+                events.add(new EventAdapter.EventItem(
+                        e.id,
+                        e.title,
+                        e.date,
+                        e.location,
+                        e.category,
+                        e.description
+                ));
+            }
+        }
+        if (adapter != null) adapter.notifyDataSetChanged();
     }
 
     private void openMaterialDatePicker() {
@@ -103,18 +136,17 @@ public class EventListActivity extends AppCompatActivity implements EventAdapter
         picker.addOnPositiveButtonClickListener(selection -> {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-            etSearch.setText(sdf.format(new Date(selection)));
+            if (etSearch != null) etSearch.setText(sdf.format(new Date(selection)));
         });
 
         picker.show(getSupportFragmentManager(), "DATE_PICKER_FILTER");
     }
 
-    private void seedDummyEvents() {
-        events.clear();
-        events.add(new EventAdapter.EventItem("Comedy Night", "2026-03-10", "Downtown", "Comedy", "A fun comedy show."));
-        events.add(new EventAdapter.EventItem("Tech Meetup", "2026-03-12", "Campus Hall", "Tech", "Talks + networking."));
-        events.add(new EventAdapter.EventItem("Live Concert", "2026-03-20", "Main Arena", "Music", "Live performance night."));
-        events.add(new EventAdapter.EventItem("Food Festival", "2026-03-25", "Old Port", "Food", "Local food + vendors."));
+    private void logout() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 
     @Override
@@ -126,25 +158,5 @@ public class EventListActivity extends AppCompatActivity implements EventAdapter
         i.putExtra("CATEGORY", event.category);
         i.putExtra("DESCRIPTION", event.description);
         startActivity(i);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 1, 0, "My Reservations");
-        menu.add(0, 2, 1, "Logout");
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == 1) {
-            startActivity(new Intent(this, MyReservationsActivity.class));
-            return true;
-        }
-        if (item.getItemId() == 2) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 }

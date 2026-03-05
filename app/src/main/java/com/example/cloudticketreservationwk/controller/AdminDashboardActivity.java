@@ -1,6 +1,7 @@
 package com.example.cloudticketreservationwk.controller;
 
 import com.example.cloudticketreservationwk.R;
+import com.example.cloudticketreservationwk.service.InMemoryStore;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,57 +20,98 @@ public class AdminDashboardActivity extends AppCompatActivity implements AdminEv
 
     private final List<AdminEventAdapter.AdminEvent> adminEvents = new ArrayList<>();
     private AdminEventAdapter adapter;
+    private View tvEmpty;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_dashboard);
 
-        View tvEmpty = findViewById(R.id.tvAdminEmpty);
+        tvEmpty = findViewById(R.id.tvAdminEmpty);
         RecyclerView rv = findViewById(R.id.rvAdminEvents);
-        MaterialButton fabAddEvent = findViewById(R.id.fabAddEvent);
 
-        seedDummyAdminEvents();
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
 
         adapter = new AdminEventAdapter(adminEvents, this);
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
 
-        tvEmpty.setVisibility(adminEvents.isEmpty() ? View.VISIBLE : View.GONE);
+        if (btnLogout != null) btnLogout.setOnClickListener(v -> logout());
 
-        fabAddEvent.setOnClickListener(v -> {
-            Intent intent = new Intent(this, AdminEventFormActivity.class);
-            intent.putExtra("MODE", "ADD");
-            startActivity(intent);
-        });
+        View addBtn = findViewByIdName("btnAddEvent");
+        if (addBtn == null) addBtn = findViewByIdName("fabAddEvent");
+        if (addBtn != null) {
+            addBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(this, AdminEventFormActivity.class);
+                intent.putExtra("MODE", "ADD");
+                startActivity(intent);
+            });
+        }
+
+        reloadFromStore();
     }
 
-    private void seedDummyAdminEvents() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        reloadFromStore();
+    }
+
+    private void reloadFromStore() {
         adminEvents.clear();
-        adminEvents.add(new AdminEventAdapter.AdminEvent("1", "Comedy Night", "2026-03-10", "Downtown", "Comedy", 100, "Active"));
-        adminEvents.add(new AdminEventAdapter.AdminEvent("2", "Tech Meetup", "2026-03-12", "Campus Hall", "Tech", 50, "Active"));
-        adminEvents.add(new AdminEventAdapter.AdminEvent("3", "Live Concert", "2026-03-20", "Main Arena", "Music", 500, "Canceled"));
+        for (InMemoryStore.EventItem e : InMemoryStore.EVENTS) {
+            adminEvents.add(new AdminEventAdapter.AdminEvent(
+                    e.id,
+                    e.title,
+                    e.date,
+                    e.location,
+                    e.category,
+                    e.capacity,
+                    e.status
+            ));
+        }
+        if (adapter != null) adapter.notifyDataSetChanged();
+        if (tvEmpty != null) tvEmpty.setVisibility(adminEvents.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private View findViewByIdName(String idName) {
+        int id = getResources().getIdentifier(idName, "id", getPackageName());
+        if (id == 0) return null;
+        return findViewById(id);
+    }
+
+    private void logout() {
+        Intent i = new Intent(this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
     }
 
     @Override
     public void onEdit(AdminEventAdapter.AdminEvent e) {
         Intent intent = new Intent(this, AdminEventFormActivity.class);
         intent.putExtra("MODE", "EDIT");
+        intent.putExtra("EVENT_ID", e.id);
         intent.putExtra("EVENT_TITLE", e.title);
         intent.putExtra("EVENT_DATE", e.date);
         intent.putExtra("EVENT_LOCATION", e.location);
         intent.putExtra("EVENT_CATEGORY", e.category);
         intent.putExtra("EVENT_CAPACITY", e.capacity);
+        intent.putExtra("EVENT_STATUS", e.status);
         startActivity(intent);
     }
 
     @Override
     public void onCancel(AdminEventAdapter.AdminEvent e) {
-        Snackbar.make(findViewById(android.R.id.content), "tba", Snackbar.LENGTH_SHORT).show();
+        InMemoryStore.EventItem real = InMemoryStore.findEventById(e.id);
+        if (real != null) real.status = "Canceled";
+        reloadFromStore();
     }
 
     @Override
     public void onUncancel(AdminEventAdapter.AdminEvent e) {
-        Snackbar.make(findViewById(android.R.id.content), "tba", Snackbar.LENGTH_SHORT).show();
+        InMemoryStore.EventItem real = InMemoryStore.findEventById(e.id);
+        if (real != null) real.status = "Active";
+        reloadFromStore();
     }
 }
